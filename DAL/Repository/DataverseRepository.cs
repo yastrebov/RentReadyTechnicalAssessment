@@ -1,4 +1,5 @@
 ﻿using DAL.Entities;
+using DAL.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
@@ -36,7 +37,15 @@ public class DataverseRepository: IDataverseRepository
 
         var connectionString =
             $"AuthType=OAuth;Url={dataverseSettings.Url};UserName={dataverseSettings.AppUser};Password={dataverseSettings.Password};";
-        _dataverseServiceClient = new ServiceClient(connectionString, logger);
+        try
+        {
+            _dataverseServiceClient = new ServiceClient(connectionString, logger);
+        }
+        catch (Exception e)
+        {
+            logger.LogError($"Can't connect to Dataverse. {e.Message}");
+            throw;
+        }
 
         _logger = logger;
     }
@@ -75,9 +84,10 @@ public class DataverseRepository: IDataverseRepository
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            _logger.LogError($"Can't read from Dataverse. {e.Message}");
+            throw new DataverseConnectionException("Can't read from Dataverse.");
         }
+        
         if (timeEntryEntities?.Entities == null || !timeEntryEntities.Entities.Any())
             return new List<TimeEntryEntity>();
 
@@ -99,6 +109,14 @@ public class DataverseRepository: IDataverseRepository
         newEntity[TimeEntryStartFieldName] =model.Start;
         newEntity[TimeEntryEndFieldName] = model.End;
 
-        return await _dataverseServiceClient.CreateAsync(newEntity, token);
+        try
+        {
+            return await _dataverseServiceClient.CreateAsync(newEntity, token);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"Can't read from Dataverse. {e.Message}");
+            throw new DataverseConnectionException("Can't write to Dataverse.");
+        }
     }
 }

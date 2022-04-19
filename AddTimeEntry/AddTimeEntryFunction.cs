@@ -3,6 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using AddTimeEntryServices.Commands;
 using AddTimeEntryServices.Services;
+using DAL.Exceptions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -40,14 +42,30 @@ namespace AddTimeEntry
             if (startOn >= endOn)
                 return new BadRequestObjectResult("EndOn should be greater than StartOn");
 
-            var createdEntityIds = await _timeEntryService.AddTimeEntryAsync(new AddTimeEntryCommand
-                {
-                    StartOn = startOn,
-                    EndOn = endOn
-                },
-                cancellationToken);
+            try
+            {
+                var createdEntityIds = await _timeEntryService.AddTimeEntryAsync(new AddTimeEntryCommand
+                    {
+                        StartOn = startOn,
+                        EndOn = endOn
+                    },
+                    cancellationToken);
 
-            return new OkObjectResult(createdEntityIds);
+                return new OkObjectResult(createdEntityIds);
+            }
+            catch (DataverseConnectionException e)
+            {
+                var result = new ObjectResult(e.Message)
+                {
+                    StatusCode = StatusCodes.Status503ServiceUnavailable
+                };
+                return result;
+            }
+            catch (Exception e)
+            {
+                log.LogError(e.Message);
+                throw;
+            }
         }
     }
 }
