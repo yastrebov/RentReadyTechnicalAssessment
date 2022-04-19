@@ -1,13 +1,15 @@
 ﻿using DAL.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.PowerPlatform.Dataverse.Client;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace DAL.Repository;
 
 public interface IDataverseRepository
 {
-    Task<List<TimeEntryEntity>> GetTimeEntryEntitiesByDatesAsync(IEnumerable<DateTime> datesInInterval, CancellationToken cancellationToken);
+    Task<List<TimeEntryEntity>> GetTimeEntryEntitiesByDatesAsync(TimeEntryModel datesInInterval, CancellationToken cancellationToken);
+    Task<Guid> AddTimeEntryEntityAsync(TimeEntryModel entity, CancellationToken token);
 }
 public class DataverseRepository: IDataverseRepository
 {
@@ -40,28 +42,42 @@ public class DataverseRepository: IDataverseRepository
     }
 
     public async Task<List<TimeEntryEntity>> GetTimeEntryEntitiesByDatesAsync(
-        IEnumerable<DateTime> datesInInterval,
+        TimeEntryModel datesInInterval,
         CancellationToken cancellationToken)
     {
-        var timeEntryEntities = await _dataverseServiceClient.RetrieveMultipleAsync(new QueryExpression(TimeEntryTableName)
-            {
-                ColumnSet = new ColumnSet(TimeEntryStartFieldName, TimeEntryEndFieldName),
-                Criteria = new FilterExpression
+        EntityCollection? timeEntryEntities;
+        try
+        {
+            timeEntryEntities = await _dataverseServiceClient.RetrieveMultipleAsync(new QueryExpression(TimeEntryTableName)
                 {
-                    Filters =
+                    ColumnSet = new ColumnSet(TimeEntryStartFieldName, TimeEntryEndFieldName),
+                    Criteria = new FilterExpression
                     {
-                        new FilterExpression
+                        Conditions =
                         {
-                            Conditions =
+                            new ConditionExpression
                             {
-                                new ConditionExpression(TimeEntryStartFieldName, ConditionOperator.In, datesInInterval),
+                                AttributeName = TimeEntryEndFieldName,
+                                Operator = ConditionOperator.GreaterEqual,
+                                Values = { datesInInterval.Start }
+                            },
+                            new ConditionExpression {
+                                AttributeName = TimeEntryStartFieldName,
+                                Operator = ConditionOperator.LessEqual,
+                                Values = { datesInInterval.End }
                             }
+
                         }
                     }
-                }
-            },
-            cancellationToken);
+                },
+                cancellationToken);
 
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
         if (timeEntryEntities?.Entities == null || !timeEntryEntities.Entities.Any())
             return new List<TimeEntryEntity>();
 
@@ -73,5 +89,16 @@ public class DataverseRepository: IDataverseRepository
         }).ToList();
 
         return returnCollection;
+    }
+    
+    public async Task<Guid> AddTimeEntryEntityAsync(
+        TimeEntryModel model, 
+        CancellationToken token)
+    {
+        var newEntity = new Entity(TimeEntryTableName);
+        newEntity[TimeEntryStartFieldName] =model.Start;
+        newEntity[TimeEntryEndFieldName] = model.End;
+
+        return await _dataverseServiceClient.CreateAsync(newEntity, token);
     }
 }

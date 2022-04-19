@@ -1,4 +1,5 @@
 ﻿using AddTimeEntryServices.Commands;
+using DAL.Entities;
 using DAL.Repository;
 using Microsoft.Extensions.Logging;
 
@@ -6,7 +7,7 @@ namespace AddTimeEntryServices.Services;
 
 public interface ITimeEntryService
 {
-    Task AddTimeEntryAsync(AddTimeEntryCommand command, CancellationToken cancellationToken);
+    Task<List<Guid>> AddTimeEntryAsync(AddTimeEntryCommand command, CancellationToken cancellationToken);
 }
 
 public class TimeEntryService: ITimeEntryService
@@ -22,14 +23,46 @@ public class TimeEntryService: ITimeEntryService
         _logger = logger;
     }
     
-    public async Task AddTimeEntryAsync(
-        AddTimeEntryCommand command, 
+    public async Task<List<Guid>> AddTimeEntryAsync(AddTimeEntryCommand command,
         CancellationToken cancellationToken)
     {
-        var datesInInterval = GetAllDaysFromInterval(command);
-        var timeEntryEntities = await _dataverseRepository.GetTimeEntryEntitiesByDatesAsync(
-            datesInInterval,
+        command.StartOn = command.StartOn.ToUniversalTime();
+        command.EndOn = command.EndOn.ToUniversalTime();
+        
+        var existedTimeEntryEntities = await _dataverseRepository.GetTimeEntryEntitiesByDatesAsync(
+            new TimeEntryModel
+            {
+                Start = command.StartOn,
+                End = command.EndOn
+            },
             cancellationToken);
+        
+        var datesInInterval = GetAllDaysFromInterval(command).ToList();
+        var excludeDates = existedTimeEntryEntities.Select(x => x.Start).ToList();
+        var newDates = datesInInterval.Except(excludeDates);
+        
+        var addTimeEntryEntityTasks = new List<Task>();
+        foreach (var newDate in newDates)
+        {
+            var timeEntryModel = new TimeEntryModel
+            {
+                Start = newDate,
+                End = newDate
+            };
+            var task = _dataverseRepository.AddTimeEntryEntityAsync(timeEntryModel, cancellationToken);
+            addTimeEntryEntityTasks.Add(task);
+        }
+        
+        await Task.WhenAll(addTimeEntryEntityTasks);
+
+        var createdEntityIds = new List<Guid>(); 
+        foreach (var addTimeEntryEntityTask in addTimeEntryEntityTasks)
+        {
+            var id = ((Task<Guid>)addTimeEntryEntityTask).Result;
+            createdEntityIds.Add(id);
+        }
+        
+        return createdEntityIds;
     }
 
     private IEnumerable<DateTime> GetAllDaysFromInterval(AddTimeEntryCommand command)

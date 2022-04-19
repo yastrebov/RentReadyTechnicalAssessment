@@ -40,26 +40,14 @@ namespace AddTimeEntry
             if (startOn >= endOn)
                 return new BadRequestObjectResult("EndOn should be greater than StartOn");
 
-            await _timeEntryService.AddTimeEntryAsync(new AddTimeEntryCommand
+            var createdEntityIds = await _timeEntryService.AddTimeEntryAsync(new AddTimeEntryCommand
                 {
                     StartOn = startOn,
                     EndOn = endOn
                 },
                 cancellationToken);
 
-            // string name = req.Query["name"];
-            //
-            // string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            // dynamic data = JsonConvert.DeserializeObject(requestBody);
-            // name = name ?? data?.name;
-            //
-            // string responseMessage = string.IsNullOrEmpty(name)
-            //     ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-            //     : $"Hello, {name}. This HTTP triggered function executed successfully.";
-            //
-            // return new OkObjectResult(responseMessage);
-
-            return new OkResult();
+            return new OkObjectResult(createdEntityIds);
         }
     }
 }
