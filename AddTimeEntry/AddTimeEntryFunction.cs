@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using AddTimeEntryServices.Commands;
 using AddTimeEntryServices.Services;
@@ -11,22 +12,23 @@ namespace AddTimeEntry
 {
     public class AddTimeEntryFunction
     {
-        private readonly IAddTimeEntryService _addTimeEntryService;
+        private readonly ITimeEntryService _timeEntryService;
 
-        public AddTimeEntryFunction(IAddTimeEntryService addTimeEntryService)
+        public AddTimeEntryFunction(ITimeEntryService timeEntryService)
         {
-            this._addTimeEntryService = addTimeEntryService;
+            this._timeEntryService = timeEntryService;
         }
 
         [FunctionName("AddTimeEntry")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)]
             Models.AddTimeEntry model,
-            ILogger log)
+            ILogger log,
+            CancellationToken cancellationToken)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
-            
-            if(model==null)
+
+            if (model == null)
                 return new BadRequestObjectResult("Model is invalid.");
 
             if (!DateTime.TryParse(model.StartOn, out var startOn))
@@ -37,12 +39,13 @@ namespace AddTimeEntry
 
             if (startOn >= endOn)
                 return new BadRequestObjectResult("EndOn should be greater than StartOn");
-            
-            _addTimeEntryService.AddTimeEntry(new AddTimeEntryCommand
-            {
-                StartOn = startOn,
-                EndOn = endOn
-            });
+
+            await _timeEntryService.AddTimeEntryAsync(new AddTimeEntryCommand
+                {
+                    StartOn = startOn,
+                    EndOn = endOn
+                },
+                cancellationToken);
 
             // string name = req.Query["name"];
             //
