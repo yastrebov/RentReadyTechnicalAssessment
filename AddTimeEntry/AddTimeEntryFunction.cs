@@ -25,6 +25,9 @@ namespace AddTimeEntry
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
+            
+            if(model==null)
+                return new BadRequestObjectResult("Model is invalid.");
 
             if (!DateTime.TryParse(model.StartOn, out var startOn))
                 return new BadRequestObjectResult("Invalid param StartOn. Param should be date.");
