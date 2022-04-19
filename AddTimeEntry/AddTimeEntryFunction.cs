@@ -65,7 +65,11 @@ namespace AddTimeEntry
             catch (Exception e)
             {
                 log.LogError(e.Message);
-                throw;
+                var result = new ObjectResult(e.Message)
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError
+                };
+                return result;
             }
         }
     }
