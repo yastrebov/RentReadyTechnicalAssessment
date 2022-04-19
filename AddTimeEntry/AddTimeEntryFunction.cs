@@ -28,7 +28,7 @@ namespace AddTimeEntry
             ILogger log,
             CancellationToken cancellationToken)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            log.LogInformation("HTTP trigger function AddTimeEntry.");
 
             if (model == null)
                 return new BadRequestObjectResult("Model is invalid.");
@@ -55,6 +55,7 @@ namespace AddTimeEntry
             }
             catch (DataverseConnectionException e)
             {
+                log.LogError(e.Message);
                 var result = new ObjectResult(e.Message)
                 {
                     StatusCode = StatusCodes.Status503ServiceUnavailable

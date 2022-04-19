@@ -111,7 +111,9 @@ public class DataverseRepository: IDataverseRepository
 
         try
         {
-            return await _dataverseServiceClient.CreateAsync(newEntity, token);
+            var id = await _dataverseServiceClient.CreateAsync(newEntity, token);
+            _logger.LogInformation($"New TimeEntry was created with Id: {id}");
+            return id;
         }
         catch (Exception e)
         {

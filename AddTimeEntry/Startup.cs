@@ -30,6 +30,8 @@ public class Startup : FunctionsStartup
             .AddEnvironmentVariables()
             .Build();
 #endif
+        
+        builder.Services.AddLogging();
 
         //services
         builder.Services.AddTransient<ITimeEntryService, TimeEntryService>();
