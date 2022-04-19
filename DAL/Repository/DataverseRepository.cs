@@ -117,7 +117,7 @@ public class DataverseRepository: IDataverseRepository
         }
         catch (Exception e)
         {
-            _logger.LogError($"Can't read from Dataverse. {e.Message}");
+            _logger.LogError($"Can't write to Dataverse. {e.Message}");
             throw new DataverseConnectionException("Can't write to Dataverse.");
         }
     }
