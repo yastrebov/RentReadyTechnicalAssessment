@@ -26,8 +26,8 @@ public class TimeEntryService: ITimeEntryService
     public async Task<List<Guid>> AddTimeEntryAsync(AddTimeEntryCommand command,
         CancellationToken cancellationToken)
     {
-        command.StartOn = command.StartOn.ToUniversalTime();
-        command.EndOn = command.EndOn.ToUniversalTime();
+        command.StartOn = command.StartOn.ToUniversalTime().Date;
+        command.EndOn = command.EndOn.ToUniversalTime().Date;
         
         var existedTimeEntryEntities = await _dataverseRepository.GetTimeEntryEntitiesByDatesAsync(
             new TimeEntryModel
