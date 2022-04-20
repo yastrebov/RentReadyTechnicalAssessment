@@ -18,7 +18,7 @@ namespace AddTimeEntry
 
         public AddTimeEntryFunction(ITimeEntryService timeEntryService)
         {
-            this._timeEntryService = timeEntryService;
+            _timeEntryService = timeEntryService;
         }
 
         [FunctionName("AddTimeEntry")]
