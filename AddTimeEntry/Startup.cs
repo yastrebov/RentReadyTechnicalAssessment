@@ -6,7 +6,6 @@ using DAL.Repository;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.PowerPlatform.Dataverse.Client;
 
 [assembly: FunctionsStartup(typeof(Startup))]
 
@@ -44,9 +43,6 @@ public class Startup : FunctionsStartup
         DataverseSettings dataverseSettings = config
             .GetSection("DataverseSettings")
             .Get<DataverseSettings>();
-
-        var connectionString =
-            $"AuthType=OAuth;Url={dataverseSettings.Url};UserName={dataverseSettings.AppUser};Password={dataverseSettings.Password};";
-        builder.Services.AddSingleton(new ServiceClient(connectionString));
+        builder.Services.AddSingleton(dataverseSettings);
     }
 }

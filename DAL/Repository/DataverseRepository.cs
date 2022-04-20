@@ -25,10 +25,28 @@ public class DataverseRepository: IDataverseRepository
     private const string TimeEntryEndFieldName = "msdyn_end";
 
     public DataverseRepository(
-        ServiceClient dataverseServiceClient,
-        ILogger<DataverseRepository> logger)
+        ILogger<DataverseRepository> logger,
+        DataverseSettings dataverseSettings)
     {
-        _dataverseServiceClient = dataverseServiceClient;
+        if (string.IsNullOrEmpty(dataverseSettings.AppUser))
+            throw new ArgumentException("Dataverse AppUser is empty");
+        if (string.IsNullOrEmpty(dataverseSettings.Password))
+            throw new ArgumentException("Dataverse Password is empty");
+        if (string.IsNullOrEmpty(dataverseSettings.Url))
+            throw new ArgumentException("Dataverse Url is empty");
+
+        var connectionString =
+            $"AuthType=OAuth;Url={dataverseSettings.Url};UserName={dataverseSettings.AppUser};Password={dataverseSettings.Password};";
+        try
+        {
+            _dataverseServiceClient = new ServiceClient(connectionString, logger);
+        }
+        catch (Exception e)
+        {
+            logger.LogError($"Can't connect to Dataverse. {e.Message}");
+            throw;
+        }
+
         _logger = logger;
     }
 
