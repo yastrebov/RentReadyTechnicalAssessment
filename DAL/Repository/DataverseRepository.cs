@@ -1,5 +1,6 @@
 ﻿using DAL.Entities;
 using DAL.Exceptions;
+using DAL.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
@@ -26,27 +27,9 @@ public class DataverseRepository: IDataverseRepository
 
     public DataverseRepository(
         ILogger<DataverseRepository> logger,
-        DataverseSettings dataverseSettings)
+        IDataverseClientServiceProvider dataverseClientServiceProvider)
     {
-        if (string.IsNullOrEmpty(dataverseSettings.AppUser))
-            throw new ArgumentException("Dataverse AppUser is empty");
-        if (string.IsNullOrEmpty(dataverseSettings.Password))
-            throw new ArgumentException("Dataverse Password is empty");
-        if (string.IsNullOrEmpty(dataverseSettings.Url))
-            throw new ArgumentException("Dataverse Url is empty");
-
-        var connectionString =
-            $"AuthType=OAuth;Url={dataverseSettings.Url};UserName={dataverseSettings.AppUser};Password={dataverseSettings.Password};";
-        try
-        {
-            _dataverseServiceClient = new ServiceClient(connectionString, logger);
-        }
-        catch (Exception e)
-        {
-            logger.LogError($"Can't connect to Dataverse. {e.Message}");
-            throw;
-        }
-
+        _dataverseServiceClient = dataverseClientServiceProvider.GetDataverceServiceClient();
         _logger = logger;
     }
 

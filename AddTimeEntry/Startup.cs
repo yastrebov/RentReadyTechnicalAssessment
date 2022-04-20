@@ -2,6 +2,7 @@
 using AddTimeEntry;
 using AddTimeEntryServices.Services;
 using DAL;
+using DAL.Infrastructure;
 using DAL.Repository;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
@@ -34,10 +35,13 @@ public class Startup : FunctionsStartup
         builder.Services.AddLogging();
 
         //services
-        builder.Services.AddTransient<ITimeEntryService, TimeEntryService>();
+        builder.Services.AddScoped<ITimeEntryService, TimeEntryService>();
 
         //repo
-        builder.Services.AddTransient<IDataverseRepository, DataverseRepository>();
+        builder.Services.AddScoped<IDataverseRepository, DataverseRepository>();
+        
+        //providers
+        builder.Services.AddScoped<IDataverseClientServiceProvider, DataverseClientServiceProvider>(); 
 
         //settings
         DataverseSettings dataverseSettings = config
